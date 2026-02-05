@@ -1,6 +1,6 @@
 # LLM-Powered RAG Chatbot
 
-A modern **Retrieval-Augmented Generation (RAG) chatbot** built using **Streamlit**, **FAISS**, and **Groq-powered LLaMA 3.3 (70B)**.  
+A modern **Retrieval-Augmented Generation (RAG) chatbot** built using **Streamlit**, **ChromaDB**, and **Groq-powered LLaMA 3.3 (70B)**.  
 Upload your documents and chat with them using accurate, context-aware AI responses.
 
 ---
@@ -11,7 +11,7 @@ Upload your documents and chat with them using accurate, context-aware AI respon
   Supports **PDF, TXT, CSV, DOCX, XLSX, JSON**
 
 - **Semantic Search**  
-  FAISS vector database for fast similarity search
+  ChromaDB vector database for fast similarity search
 
 - **Interactive Chat Interface**  
   Clean Streamlit UI with conversation history
@@ -76,9 +76,9 @@ Upload your documents and chat with them using accurate, context-aware AI respon
         │                                      │
         ▼                                      │
 ┌───────────────┐                              │
-│ FAISS Vector  │◄─────────────────────────────┘
-│   Database    │ (Similarity Search)
-│   (Index)     │
+│ ChromaDB      │◄─────────────────────────────┘
+│   Vector      │ (Similarity Search)
+│   Database    │
 └───────┬───────┘
         │
         │ (Retrieve Top-K)
@@ -117,7 +117,7 @@ Upload your documents and chat with them using accurate, context-aware AI respon
 | Component | Technology |
 |-----------|-----------|
 | **Frontend** | Streamlit |
-| **Vector Database** | FAISS (Facebook AI Similarity Search) |
+| **Vector Database** | ChromaDB |
 | **Embeddings** | HuggingFace `sentence-transformers/all-MiniLM-L6-v2` |
 | **LLM** | Groq API (LLaMA 3.3 70B Versatile) |
 | **Document Processing** | PyPDF2, python-docx, pandas, openpyxl, json |
@@ -226,7 +226,7 @@ LLM-Powered-RAG-ChatBot/
 │   ├── document_loader.py     # Document parsing utilities
 │   ├── text_splitter.py       # Text chunking logic
 │   ├── embeddings.py          # Embedding generation
-│   ├── vector_store.py        # FAISS vector database operations
+│   ├── vector_store.py        # ChromaDB vector database operations
 │   └── llm_handler.py         # Groq LLM integration
 │
 ├── config/
@@ -576,7 +576,7 @@ Contributions are welcome! Please follow these steps:
 ### Official Documentation
 
 - [Streamlit Docs](https://docs.streamlit.io/)
-- [FAISS Documentation](https://faiss.ai/)
+- [ChromaDB Documentation](https://docs.trychroma.com/)
 - [Groq API Docs](https://console.groq.com/docs)
 - [LangChain Docs](https://python.langchain.com/)
 - [HuggingFace Docs](https://huggingface.co/docs)
@@ -597,7 +597,7 @@ Special thanks to the amazing open-source community:
 - **[Groq](https://groq.com/)** - For lightning-fast LLM inference
 - **[Meta AI](https://ai.meta.com/)** - For LLaMA models
 - **[LangChain](https://langchain.com/)** - For RAG utilities and tools
-- **[FAISS](https://github.com/facebookresearch/faiss)** - For efficient similarity search
+- **[ChromaDB](https://github.com/chroma-core/chroma)** - For efficient similarity search
 - **[HuggingFace](https://huggingface.co/)** - For state-of-the-art embedding models
 - All contributors for their valuable input and improvements
 
@@ -644,4 +644,4 @@ If you find this project helpful, please consider:
 
 ---
 
-**Made with Streamlit, FAISS, and Groq**
+**Made with Streamlit, ChromaDB, and Groq**

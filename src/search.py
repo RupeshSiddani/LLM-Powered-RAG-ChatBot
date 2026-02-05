@@ -6,11 +6,11 @@ from langchain_groq import ChatGroq
 load_dotenv()
 
 class RAGSearch:
-    def __init__(self, persist_dir: str = "faiss_store", embedding_model: str = "all-MiniLM-L6-v2", llm_model: str = "llama-3.3-70b-versatile"):
+    def __init__(self, persist_dir: str = "chroma_store", embedding_model: str = "all-MiniLM-L6-v2", llm_model: str = "llama-3.3-70b-versatile"):
         """Initialize the RAG search system.
         
         Args:
-            persist_dir: Directory to store/load the FAISS index
+            persist_dir: Directory to store/load the ChromaDB collection
             embedding_model: Name of the embedding model to use
             llm_model: Name of the language model to use for generation
             
@@ -21,27 +21,20 @@ class RAGSearch:
         self.vectorstore = FaissVectorStore(persist_dir, embedding_model)
         
         # Load or build vectorstore if not already loaded
-        faiss_path = os.path.join(persist_dir, "faiss.index")
-        meta_path = os.path.join(persist_dir, "metadata.pkl")
-        
-        if not (os.path.exists(faiss_path) and os.path.exists(meta_path)):
-            print("[INFO] No existing FAISS index found. Building new index...")
-            from data_loader import load_all_documents
-            try:
+        try:
+            if self.vectorstore.collection.count() == 0:
+                print("[INFO] No existing ChromaDB collection found. Building new index...")
+                from data_loader import load_all_documents
                 docs = load_all_documents("data")
                 if not docs:
                     raise ValueError("No documents found in the data directory")
                 self.vectorstore.build_from_documents(docs)
-            except Exception as e:
-                print(f"[ERROR] Failed to build vector store: {str(e)}")
-                raise
-        else:
-            print("[INFO] Loading existing FAISS index...")
-            try:
+            else:
+                print("[INFO] Loading existing ChromaDB collection...")
                 self.vectorstore.load()
-            except Exception as e:
-                print(f"[ERROR] Failed to load vector store: {str(e)}")
-                raise
+        except Exception as e:
+            print(f"[ERROR] Failed to initialize vector store: {str(e)}")
+            raise
         
         # Initialize LLM
         groq_api_key = os.getenv("GROQ_API_KEY")

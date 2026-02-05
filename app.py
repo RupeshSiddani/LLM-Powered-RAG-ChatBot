@@ -19,7 +19,7 @@ def main():
     try:
         # Configuration
         data_dir = os.getenv("DATA_DIR", "data")
-        persist_dir = os.getenv("PERSIST_DIR", "faiss_store")
+        persist_dir = os.getenv("PERSIST_DIR", "chroma_store")
         embedding_model = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
         llm_model = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
         
