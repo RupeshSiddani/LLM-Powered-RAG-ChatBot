@@ -1,129 +1,215 @@
-# LLM-Powered RAG Chatbot
+# LLM-Powered RAG ChatBot
 
-A modern **Retrieval-Augmented Generation (RAG) chatbot** built using **Streamlit**, **ChromaDB**, and **Groq-powered LLaMA 3.3 (70B)**.  
-Upload your documents and chat with them using accurate, context-aware AI responses.
+A modern document-based question-answering chatbot powered by **Retrieval-Augmented Generation (RAG)**, **FastAPI**, and **React**. Upload your documents and have intelligent conversations with them using advanced AI.
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [What is RAG?](#what-is-rag)
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [How It Works](#how-it-works)
+- [Installation](#installation)
+- [Usage](#usage)
+- [API Endpoints](#api-endpoints)
+- [Configuration](#configuration)
+- [Project Structure](#project-structure)
+- [License](#license)
 
 ---
 
 ## Features
 
-- **Multi-Format Document Upload**  
-  Supports **PDF, TXT, CSV, DOCX, XLSX, JSON**
+- **Multi-Format Document Support** - Upload PDF, TXT, DOCX, CSV, XLSX, and JSON files
+- **Intelligent Semantic Search** - ChromaDB vector database for accurate document retrieval
+- **Real-time Streaming Responses** - ChatGPT-style streaming for better user experience
+- **Modern Chat Interface** - React-based UI with Vite for fast development
+- **REST API** - FastAPI backend with comprehensive endpoints
+- **Context-Aware Answers** - AI responds based on your uploaded documents
+- **Persistent Storage** - ChromaDB maintains your document embeddings across sessions
 
-- **Semantic Search**  
-  ChromaDB vector database for fast similarity search
+---
 
-- **Interactive Chat Interface**  
-  Clean Streamlit UI with conversation history
+## What is RAG?
 
-- **Groq LLM Integration**  
-  Powered by **LLaMA 3.3 70B** for high-quality answers
+**Retrieval-Augmented Generation (RAG)** is a technique that enhances Large Language Models (LLMs) by giving them access to external knowledge. Instead of relying solely on the model's training data, RAG:
 
-- **Efficient RAG Pipeline**  
-  Optimized chunking, embedding, and retrieval
+1. **Retrieves** relevant information from your documents
+2. **Augments** the LLM's prompt with this retrieved context
+3. **Generates** accurate, context-aware responses
 
-- **Secure & Private**  
-  Your documents are processed locally, API calls are encrypted
+### Why RAG?
 
-- **Real-time Processing**  
-  Instant feedback during document upload and processing
+- **Reduces hallucinations** - Answers are grounded in your actual documents
+- **Up-to-date information** - Works with your latest documents without retraining
+- **Domain-specific knowledge** - Enables the LLM to answer questions about your documents
+- **Verifiable sources** - Responses are based on retrievable document chunks
+- **Cost-effective** - No need for expensive model fine-tuning
 
 ---
 
 ## Architecture
 
+```mermaid
+graph TB
+    subgraph Client
+        A[React Frontend<br/>Vite]
+    end
+    
+    subgraph Backend
+        B[FastAPI Backend<br/>Python REST API]
+    end
+    
+    subgraph "Document Ingestion Pipeline"
+        C[Document Upload<br/>PDF, DOCX, TXT, CSV, XLSX, JSON]
+        D[Document Loaders<br/>PyPDFLoader, TextLoader, CSVLoader]
+        E[Text Splitter<br/>RecursiveCharacterTextSplitter<br/>1000 chars, 200 overlap]
+        F[Generate Embeddings<br/>SentenceTransformers<br/>all-MiniLM-L6-v2]
+        G[(ChromaDB<br/>Vector Store)]
+    end
+    
+    subgraph "Query Processing Pipeline"
+        H[User Query<br/>Natural Language]
+        I[Query Embedding<br/>Same Model]
+        J[Similarity Search<br/>Cosine Similarity<br/>Top-K Retrieval]
+        K[Context Builder<br/>Combine Chunks]
+        L[LLM Generation<br/>Groq Llama 3.3 70B<br/>Streaming]
+        M[Response<br/>AI Answer]
+    end
+    
+    A -->|HTTP Request| B
+    B -->|Upload| C
+    B -->|Query| H
+    
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    
+    H --> I
+    I --> J
+    G -.->|Retrieve Vectors| J
+    J --> K
+    K --> L
+    L --> M
+    M -->|Stream Response| A
+    
+    style A fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style B fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style G fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style L fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        USER INTERACTION                          │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │
-                ┌───────────▼────────────┐
-                │  Streamlit Frontend    │
-                │  (Upload & Chat UI)    │
-                └───────────┬────────────┘
-                            │
-        ┌───────────────────┴───────────────────┐
-        │                                       │
-        ▼                                       ▼
-┌───────────────┐                      ┌───────────────┐
-│   Document    │                      │  User Query   │
-│   Uploader    │                      │    Input      │
-└───────┬───────┘                      └───────┬───────┘
-        │                                      │
-        ▼                                      │
-┌───────────────┐                              │
-│ File Parser   │                              │
-│ (PDF, DOCX,   │                              │
-│  CSV, XLSX,   │                              │
-│  TXT, JSON)   │                              │
-└───────┬───────┘                              │
-        │                                      │
-        ▼                                      │
-┌───────────────┐                              │
-│ Text Chunking │                              │
-│ (Recursive    │                              │
-│  Character    │                              │
-│  Splitter)    │                              │
-└───────┬───────┘                              │
-        │                                      │
-        ▼                                      │
-┌───────────────┐                              │
-│  Embeddings   │                              │
-│ (HuggingFace  │                              │
-│  sentence-    │                              │
-│ transformers) │                              │
-└───────┬───────┘                              │
-        │                                      │
-        ▼                                      │
-┌───────────────┐                              │
-│ ChromaDB      │◄─────────────────────────────┘
-│   Vector      │ (Similarity Search)
-│   Database    │
-└───────┬───────┘
-        │
-        │ (Retrieve Top-K)
-        │ (Relevant Chunks)
-        │
-        ▼
-┌───────────────┐
-│  Context +    │
-│  Question     │
-└───────┬───────┘
-        │
-        ▼
-┌───────────────┐
-│   Groq API    │
-│  LLaMA 3.3    │
-│   (70B)       │
-└───────┬───────┘
-        │
-        ▼
-┌───────────────┐
-│  AI-Generated │
-│   Response    │
-└───────┬───────┘
-        │
-        ▼
-┌───────────────┐
-│ Display to    │
-│     User      │
-└───────────────┘
-```
+
+### System Flow
+
+**Document Ingestion (Left Pipeline):**
+1. User uploads documents through React interface
+2. FastAPI receives files and routes to document loaders
+3. Appropriate loader parses each file type
+4. Text is split into chunks (1000 chars with 200 overlap)
+5. Each chunk is converted to 384-dimensional vectors
+6. Vectors stored in ChromaDB with metadata
+
+**Query Processing (Right Pipeline):**
+1. User asks a question through chat interface
+2. Question is converted to vector using same embedding model
+3. ChromaDB performs similarity search to find relevant chunks
+4. Top-K most similar chunks are retrieved
+5. Context is built from retrieved chunks
+6. Groq LLM generates answer based on context
+7. Response is streamed back to user in real-time
 
 ---
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| **Frontend** | Streamlit |
-| **Vector Database** | ChromaDB |
-| **Embeddings** | HuggingFace `sentence-transformers/all-MiniLM-L6-v2` |
-| **LLM** | Groq API (LLaMA 3.3 70B Versatile) |
-| **Document Processing** | PyPDF2, python-docx, pandas, openpyxl, json |
-| **Text Splitting** | LangChain RecursiveCharacterTextSplitter |
-| **Deployment** | Streamlit Cloud |
-| **Language** | Python 3.8+ |
+### Backend
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **Web Framework** | FastAPI | High-performance async API server |
+| **LLM Provider** | Groq API | Ultra-fast inference with Llama 3.3 70B |
+| **Vector Database** | ChromaDB | Persistent vector storage and similarity search |
+| **Embeddings** | Sentence Transformers | Convert text to 384-dim vectors |
+| **Document Processing** | LangChain Community | Parse PDF, DOCX, CSV, XLSX, JSON |
+| **Text Splitting** | LangChain | Recursive character text splitter |
+
+### Frontend
+
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| **UI Framework** | React | Component-based user interface |
+| **Build Tool** | Vite | Fast development and optimized builds |
+| **Styling** | CSS | Custom ChatGPT-style interface |
+| **HTTP Client** | Fetch API | Communicate with FastAPI backend |
+
+---
+
+## How It Works
+
+### Document Processing
+
+**Step 1: Upload Documents**
+- Supported formats: PDF, DOCX, TXT, CSV, XLSX, JSON
+- Files sent to `/api/upload` endpoint
+- Server saves files temporarily for processing
+
+**Step 2: Parse & Extract Text**
+- **PDF**: PyPDFLoader extracts text from each page
+- **DOCX**: Docx2txtLoader parses Word documents
+- **TXT**: TextLoader reads plain text
+- **CSV**: CSVLoader processes tabular data
+- **XLSX**: Custom pandas-based loader for Excel files
+- **JSON**: JSONLoader handles structured data
+
+**Step 3: Split into Chunks**
+- RecursiveCharacterTextSplitter divides text
+- Chunk size: 1000 characters (optimal for embeddings)
+- Overlap: 200 characters (preserves context)
+- Ensures chunks fit within model limits
+
+**Step 4: Generate Embeddings**
+- Model: `sentence-transformers/all-MiniLM-L6-v2`
+- Each chunk → 384-dimensional vector
+- Captures semantic meaning, not just keywords
+- Fast CPU inference
+
+**Step 5: Store in ChromaDB**
+- Vectors stored with metadata (filename, chunk index)
+- Persisted to disk in `chroma_store/` directory
+- Indexed for fast similarity search
+
+### Query Processing
+
+**Step 1: User Question**
+- Question typed in React chat interface
+- Sent to `/api/chat/stream` for streaming response
+
+**Step 2: Embed Query**
+- Same embedding model converts query to vector
+- Ensures query and documents are in same semantic space
+
+**Step 3: Similarity Search**
+- ChromaDB compares query vector with stored vectors
+- Uses cosine similarity (range: -1 to 1)
+- Returns top-k most similar chunks (default k=4)
+
+**Step 4: Build Context**
+- Retrieved chunks concatenated with separators
+- Format: `Context: [Chunk 1] --- [Chunk 2] --- [Chunk 3]`
+
+**Step 5: LLM Generation**
+- System prompt instructs LLM to use only provided context
+- Groq's Llama 3.3 70B generates answer
+- Temperature: 0.7 (balanced creativity/accuracy)
+- Response streamed token-by-token via Server-Sent Events
+
+**Step 6: Display Response**
+- React component receives streaming chunks
+- UI updates in real-time (typing effect)
+- User sees answer appearing progressively
 
 ---
 
@@ -132,79 +218,165 @@ Upload your documents and chat with them using accurate, context-aware AI respon
 ### Prerequisites
 
 - Python 3.8 or higher
-- Groq API key ([Get one for free](https://console.groq.com/))
-- pip package manager
+- Node.js 16.x or higher
+- npm 8.x or higher
+- Groq API Key ([Get one free](https://console.groq.com))
 
-### Quick Start
+### Backend Setup
 
 ```bash
 # Clone the repository
 git clone https://github.com/RupeshSiddani/LLM-Powered-RAG-ChatBot.git
 cd LLM-Powered-RAG-ChatBot
 
-# Create and activate virtual environment
+# Create virtual environment
 python -m venv venv
 
-# On Windows
+# Activate virtual environment
+# Windows:
 venv\Scripts\activate
-
-# On macOS/Linux
+# macOS/Linux:
 source venv/bin/activate
 
-# Install required dependencies
-pip install -r requirements.txt
-
-# Create environment file
-cp .env.example .env
-
-# Add your Groq API key to .env
-# GROQ_API_KEY=your_api_key_here
-
-# Run the application
-streamlit run app.py
+# Install dependencies
+pip install fastapi uvicorn python-multipart python-dotenv \
+            langchain langchain-groq langchain-community \
+            sentence-transformers chromadb pypdf python-docx \
+            pandas openpyxl
 ```
 
-The app will open automatically in your browser at `http://localhost:8501`
+### Frontend Setup
+
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Return to project root
+cd ..
+```
+
+### Environment Configuration
+
+Create `.env` file in project root:
+
+```env
+# Required
+GROQ_API_KEY=your_groq_api_key_here
+
+# Optional (defaults shown)
+EMBEDDING_MODEL=all-MiniLM-L6-v2
+LLM_MODEL=llama-3.3-70b-versatile
+PERSIST_DIR=chroma_store
+CHUNK_SIZE=1000
+CHUNK_OVERLAP=200
+```
 
 ---
 
-## Usage Guide
+## Usage
 
-### 1. Launch the Application
+### Start the Application
 
+**Terminal 1 - Backend:**
 ```bash
-streamlit run app.py
+python main_api.py
+```
+Server runs at `http://localhost:8000`
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm run dev
+```
+UI available at `http://localhost:5173`
+
+### Using the ChatBot
+
+1. Open `http://localhost:5173` in your browser
+2. Click "Upload Documents" and select files
+3. Wait for processing confirmation
+4. Type questions in the chat input
+5. View AI responses based on your documents
+
+---
+
+## API Endpoints
+
+### Health Check
+```http
+GET /api/health
+```
+Response: `{"status": "healthy"}`
+
+### Upload Documents
+```http
+POST /api/upload
+Content-Type: multipart/form-data
+
+Request: files: [File, File, ...]
+Response: {"message": "Documents uploaded successfully", "files_processed": 3}
 ```
 
-### 2. Configure API Key
+### Chat (Non-Streaming)
+```http
+POST /api/chat
+Content-Type: application/json
 
-- Enter your Groq API key in the sidebar
-- Or set it in the `.env` file as `GROQ_API_KEY`
+Request: {"message": "What is the main topic?"}
+Response: {"response": "Based on the documents..."}
+```
 
-### 3. Upload Documents
+### Chat (Streaming)
+```http
+POST /api/chat/stream
+Content-Type: application/json
 
-- Click **"Browse files"** in the sidebar
-- Select one or more documents
-- Supported formats: PDF, DOCX, TXT, CSV, XLSX, JSON
-- Maximum file size: 200MB per file
+Request: {"message": "Summarize the document"}
+Response: Server-Sent Events stream
+```
 
-### 4. Process Documents
+---
 
-- Click **"Process Documents"** button
-- Wait for the vector database to be created
-- You'll see a success message when ready
+## Configuration
 
-### 5. Start Chatting
+### Embedding Models
 
-- Type your question in the chat input box
-- Press Enter or click Send
-- Get AI-powered answers based on your documents
-- View conversation history in the main panel
+```env
+# Default (384-dim, balanced)
+EMBEDDING_MODEL=all-MiniLM-L6-v2
 
-### 6. Clear Chat History
+# Higher accuracy (768-dim, slower)
+EMBEDDING_MODEL=all-mpnet-base-v2
 
-- Use the **"Clear Chat History"** button in the sidebar
-- Resets the conversation while keeping documents indexed
+# Multilingual support
+EMBEDDING_MODEL=paraphrase-multilingual-MiniLM-L12-v2
+```
+
+### LLM Models
+
+```env
+# Default - Fast and versatile
+LLM_MODEL=llama-3.3-70b-versatile
+
+# Alternatives
+LLM_MODEL=llama-3.1-70b-versatile
+LLM_MODEL=mixtral-8x7b-32768
+```
+
+### Chunking Parameters
+
+```env
+# Larger chunks = more context, slower
+CHUNK_SIZE=1500
+CHUNK_OVERLAP=300
+
+# Smaller chunks = less context, faster
+CHUNK_SIZE=500
+CHUNK_OVERLAP=100
+```
 
 ---
 
@@ -213,401 +385,88 @@ streamlit run app.py
 ```
 LLM-Powered-RAG-ChatBot/
 │
-├── app.py                      # Main Streamlit application
+├── main_api.py                 # FastAPI application
 ├── requirements.txt            # Python dependencies
-├── .env                        # Environment variables (API keys)
-├── .env.example               # Example environment file
-├── .gitignore                 # Git ignore rules
-├── README.md                  # Project documentation
-├── LICENSE                    # MIT License
+├── .env                        # Environment variables
+├── .gitignore                  # Git ignore rules
+├── README.md                   # Documentation
 │
 ├── src/
 │   ├── __init__.py
-│   ├── document_loader.py     # Document parsing utilities
-│   ├── text_splitter.py       # Text chunking logic
-│   ├── embeddings.py          # Embedding generation
-│   ├── vector_store.py        # ChromaDB vector database operations
-│   └── llm_handler.py         # Groq LLM integration
+│   ├── vectorstore.py          # ChromaDB operations
+│   ├── search.py               # RAG search logic
+│   ├── embedding.py            # Embedding pipeline
+│   └── data_loader.py          # Document parsing
 │
-├── config/
-│   ├── __init__.py
-│   └── settings.py            # Application configuration
+├── frontend/
+│   ├── package.json            # Node dependencies
+│   ├── vite.config.js          # Vite config
+│   ├── index.html              # HTML entry
+│   │
+│   └── src/
+│       ├── App.jsx             # Main React component
+│       ├── App.css             # Styling
+│       └── main.jsx            # React entry
 │
-├── utils/
-│   ├── __init__.py
-│   ├── helpers.py             # Helper functions
-│   └── validators.py          # Input validation
-│
-├── assets/
-│   ├── logo.png               # Application logo
-│   └── screenshots/           # Demo screenshots
-│
-└── tests/
-    ├── __init__.py
-    ├── test_document_loader.py
-    ├── test_embeddings.py
-    └── test_vector_store.py
+└── chroma_store/               # Vector database (auto-created)
 ```
 
 ---
 
-## Configuration
+## Troubleshooting
 
-### Application Settings (`config/settings.py`)
-
-```python
-# Embedding Configuration
-EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-EMBEDDING_DIMENSION = 384
-
-# Text Chunking
-CHUNK_SIZE = 1000
-CHUNK_OVERLAP = 200
-SEPARATORS = ["\n\n", "\n", " ", ""]
-
-# Vector Database
-TOP_K_RESULTS = 5
-SIMILARITY_THRESHOLD = 0.7
-
-# LLM Configuration
-GROQ_MODEL = "llama-3.3-70b-versatile"
-TEMPERATURE = 0.7
-MAX_TOKENS = 1024
-TOP_P = 0.9
-
-# File Upload
-MAX_FILE_SIZE_MB = 200
-ALLOWED_EXTENSIONS = ['pdf', 'txt', 'csv', 'docx', 'xlsx', 'json']
-
-# UI Settings
-PAGE_TITLE = "LLM-Powered RAG Chatbot"
-PAGE_ICON = "🔍"
-LAYOUT = "wide"
-```
-
-### Environment Variables (`.env`)
-
-```env
-# Required
-GROQ_API_KEY=your_groq_api_key_here
-
-# Optional
-LOG_LEVEL=INFO
-CACHE_DIR=.cache
-MAX_WORKERS=4
-```
-
----
-
-## Performance Metrics
-
-| Metric | Performance |
-|--------|-------------|
-| **Document Processing** | 2-5 seconds (typical documents) |
-| **Query Response Time** | 1-3 seconds |
-| **Embedding Generation** | ~100 chunks/second |
-| **Vector Search** | <100ms (up to 10K vectors) |
-| **Supported File Sizes** | Up to 200MB per file |
-| **Concurrent Users** | 50+ (Streamlit Cloud) |
-| **Accuracy** | 85-95% (context-dependent) |
-
----
-
-## API Keys & Environment
-
-### Getting a Groq API Key
-
-1. Visit [Groq Console](https://console.groq.com/)
-2. Sign up for a free account
-3. Navigate to API Keys section
-4. Generate a new API key
-5. Copy and paste into `.env` file
-
-### Securing Your Keys
+### Backend Issues
 
 ```bash
-# Never commit .env to version control
-echo ".env" >> .gitignore
+# Port already in use
+uvicorn main_api:app --port 8001
 
-# Use environment variables in production
-export GROQ_API_KEY="your_key_here"
-
-# For Streamlit Cloud deployment
-# Add secrets in the Streamlit Cloud dashboard
+# Module not found
+pip install -r requirements.txt
 ```
 
----
-
-## Customization
-
-### Changing the Embedding Model
-
-```python
-# In config/settings.py
-EMBEDDING_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-```
-
-### Adjusting Chunk Size
-
-```python
-# Larger chunks = more context, slower processing
-CHUNK_SIZE = 1500
-CHUNK_OVERLAP = 300
-
-# Smaller chunks = less context, faster processing
-CHUNK_SIZE = 500
-CHUNK_OVERLAP = 100
-```
-
-### Modifying LLM Parameters
-
-```python
-# More creative responses
-TEMPERATURE = 1.0
-
-# More deterministic responses
-TEMPERATURE = 0.3
-
-# Longer responses
-MAX_TOKENS = 2048
-```
-
----
-
-## Testing
+### Frontend Issues
 
 ```bash
-# Install testing dependencies
-pip install pytest pytest-cov
-
-# Run all tests
-pytest tests/
-
-# Run with coverage report
-pytest --cov=src tests/
-
-# Run specific test file
-pytest tests/test_document_loader.py
-
-# Run with verbose output
-pytest -v tests/
+# Clear cache and reinstall
+rm -rf node_modules package-lock.json
+npm install
 ```
 
----
-
-## Deployment
-
-### Deploy to Streamlit Cloud
-
-1. Push your code to GitHub
-2. Visit [Streamlit Cloud](https://streamlit.io/cloud)
-3. Click "New app"
-4. Select your repository
-5. Set main file as `app.py`
-6. Add secrets (GROQ_API_KEY) in Advanced Settings
-7. Click "Deploy"
-
-### Deploy to Heroku
+### Embedding Issues
 
 ```bash
-# Create Procfile
-echo "web: streamlit run app.py --server.port=$PORT" > Procfile
+# Model download (first run takes time)
+# Solution: Wait for automatic download
 
-# Deploy
-heroku create your-app-name
-heroku config:set GROQ_API_KEY=your_key_here
-git push heroku main
+# Out of memory
+# Solution: Use smaller embedding model
 ```
 
-### Deploy with Docker
-
-```dockerfile
-FROM python:3.9-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-
-EXPOSE 8501
-
-CMD ["streamlit", "run", "app.py"]
-```
+### ChromaDB Issues
 
 ```bash
-# Build and run
-docker build -t rag-chatbot .
-docker run -p 8501:8501 -e GROQ_API_KEY=your_key rag-chatbot
+# Reset database
+rm -rf chroma_store/
+python main_api.py
 ```
 
 ---
 
 ## Contributing
 
-Contributions are welcome! Please follow these steps:
+Contributions welcome! Please:
 
-### How to Contribute
-
-1. **Fork the Repository**
-   ```bash
-   git clone https://github.com/RupeshSiddani/LLM-Powered-RAG-ChatBot.git
-   ```
-
-2. **Create a Feature Branch**
-   ```bash
-   git checkout -b feature/AmazingFeature
-   ```
-
-3. **Make Your Changes**
-   - Write clean, documented code
-   - Add tests for new features
-   - Update README if needed
-
-4. **Commit Your Changes**
-   ```bash
-   git commit -m 'Add some AmazingFeature'
-   ```
-
-5. **Push to Branch**
-   ```bash
-   git push origin feature/AmazingFeature
-   ```
-
-6. **Open a Pull Request**
-   - Describe your changes
-   - Link any related issues
-   - Wait for review
-
-### Code Style
-
-- Follow PEP 8 guidelines
-- Use type hints where applicable
-- Add docstrings to functions
-- Keep functions focused and small
-
----
-
-## Known Issues & Limitations
-
-### Current Issues
-
-- Large files (>100MB) may take longer to process
-- Complex PDF layouts with tables may not parse perfectly
-- XLSX files with multiple sheets only process the first sheet
-- Scanned PDFs require OCR (not currently supported)
-- Chat history is not persisted between sessions
-
-### Workarounds
-
-- **Large Files**: Split into smaller chunks before uploading
-- **Complex PDFs**: Convert to text format first
-- **Multi-sheet XLSX**: Export each sheet separately
-- **Scanned PDFs**: Use external OCR tools first
-
----
-
-## Roadmap
-
-### Version 1.1 (Q2 2025)
-
-- Add support for image extraction from PDFs
-- Implement OCR for scanned documents
-- Add conversation memory across sessions
-- Persistent chat history with SQLite
-
-### Version 1.2 (Q3 2025)
-
-- Source citation in responses
-- Multi-language document support
-- Advanced filtering and search options
-- Document comparison feature
-
-### Version 2.0 (Q4 2025)
-
-- Support for web scraping URLs
-- Real-time collaborative chat
-- Export chat history (PDF, DOCX)
-- Custom model fine-tuning
-- REST API endpoint
-- Mobile app (React Native)
-
----
-
-## Use Cases
-
-### Business Applications
-
-- **Customer Support**: Answer questions from product manuals
-- **Legal**: Search through contracts and legal documents
-- **HR**: Query employee handbooks and policies
-- **Research**: Analyze academic papers and reports
-
-### Personal Use
-
-- **Study Aid**: Chat with textbooks and lecture notes
-- **Book Club**: Discuss novels and non-fiction books
-- **Recipe Management**: Search cooking instructions
-- **Travel Planning**: Query travel guides and itineraries
-
----
-
-## Security & Privacy
-
-- Documents are processed locally before embedding
-- API calls to Groq are encrypted (HTTPS)
-- No document data is stored on external servers
-- API keys are never exposed in the frontend
-- Session data is cleared on browser close
-
-### Best Practices
-
-- Never commit `.env` files to version control
-- Rotate API keys regularly
-- Use environment variables in production
-- Enable HTTPS in production deployments
-- Implement rate limiting for public deployments
-
----
-
-## Resources & Documentation
-
-### Official Documentation
-
-- [Streamlit Docs](https://docs.streamlit.io/)
-- [ChromaDB Documentation](https://docs.trychroma.com/)
-- [Groq API Docs](https://console.groq.com/docs)
-- [LangChain Docs](https://python.langchain.com/)
-- [HuggingFace Docs](https://huggingface.co/docs)
-
-### Tutorials & Guides
-
-- [RAG Tutorial](https://python.langchain.com/docs/use_cases/question_answering/)
-- [Streamlit for Beginners](https://docs.streamlit.io/get-started)
-- [Vector Databases Explained](https://www.pinecone.io/learn/vector-database/)
-
----
-
-## Acknowledgments
-
-Special thanks to the amazing open-source community:
-
-- **[Streamlit](https://streamlit.io/)** - For the incredible web framework
-- **[Groq](https://groq.com/)** - For lightning-fast LLM inference
-- **[Meta AI](https://ai.meta.com/)** - For LLaMA models
-- **[LangChain](https://langchain.com/)** - For RAG utilities and tools
-- **[ChromaDB](https://github.com/chroma-core/chroma)** - For efficient similarity search
-- **[HuggingFace](https://huggingface.co/)** - For state-of-the-art embedding models
-- All contributors for their valuable input and improvements
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/NewFeature`)
+3. Commit changes (`git commit -m 'Add NewFeature'`)
+4. Push to branch (`git push origin feature/NewFeature`)
+5. Open Pull Request
 
 ---
 
 ## License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
-```
 MIT License
 
 Copyright (c) 2025
@@ -629,19 +488,19 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-```
 
 ---
 
-## Support
+## Acknowledgments
 
-If you find this project helpful, please consider:
-
-- Starring the repository on GitHub
-- Forking and contributing to the project
-- Reporting bugs and suggesting features
-- Sharing with your network
+- [FastAPI](https://fastapi.tiangolo.com/) - Web framework
+- [LangChain](https://python.langchain.com/) - RAG framework
+- [ChromaDB](https://www.trychroma.com/) - Vector database
+- [Sentence Transformers](https://www.sbert.net/) - Embeddings
+- [Groq](https://groq.com/) - LLM inference
+- [React](https://react.dev/) - Frontend framework
+- [Vite](https://vitejs.dev/) - Build tool
 
 ---
 
-**Made with Streamlit, ChromaDB, and Groq**
+**Built with FastAPI, React, and ChromaDB**
