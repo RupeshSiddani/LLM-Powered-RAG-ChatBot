@@ -1,4 +1,4 @@
-# Python-generated files
+# Python
 __pycache__/
 *.py[oc]
 build/
@@ -8,12 +8,21 @@ wheels/
 
 # Virtual environments
 .venv
+venv/
 
 # Environment variables (contains API keys!)
 .env
 
 # Vector store (can be rebuilt)
+chroma_store/
 faiss_store/
+
+# Node.js
+node_modules/
+frontend/node_modules/
+
+# Build output
+frontend/dist/
 
 # Notebook checkpoints
 .ipynb_checkpoints/
@@ -26,5 +35,5 @@ faiss_store/
 .DS_Store
 Thumbs.db
 
-# UV lock file (optional, can be committed for reproducibility)
-# uv.lock
+# Logs
+*.log
