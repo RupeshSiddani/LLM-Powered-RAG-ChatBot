@@ -24,7 +24,7 @@ A modern document-based question-answering chatbot powered by **Retrieval-Augmen
 
 - **Multi-Format Document Support** - Upload PDF, TXT, DOCX, CSV, XLSX, and JSON files
 - **Intelligent Semantic Search** - ChromaDB vector database for accurate document retrieval
-- **Real-time Streaming Responses** - ChatGPT-style streaming for better user experience
+- **Real-time Streaming Responses** - Simple UI streaming for better user experience
 - **Modern Chat Interface** - React-based UI with Vite for fast development
 - **REST API** - FastAPI backend with comprehensive endpoints
 - **Context-Aware Answers** - AI responds based on your uploaded documents
