@@ -97,6 +97,24 @@ async def health_check():
     }
 
 
+@app.get("/api/sources")
+async def get_sources():
+    """Get list of loaded document sources."""
+    if not vectorstore:
+        return {"sources": []}
+    return {"sources": vectorstore.get_sources()}
+
+
+@app.post("/api/clear")
+async def clear_documents():
+    """Clear all documents from the vector store."""
+    global rag_initialized
+    if vectorstore:
+        vectorstore.clear()
+        rag_initialized = False
+    return {"status": "cleared", "document_count": 0}
+
+
 @app.post("/api/upload")
 async def upload_documents(files: List[UploadFile] = File(...)):
     """Upload and process documents."""
