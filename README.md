@@ -142,7 +142,7 @@ graph TB
 |-----------|------------|---------|
 | **UI Framework** | React | Component-based user interface |
 | **Build Tool** | Vite | Fast development and optimized builds |
-| **Styling** | CSS | Custom ChatGPT-style interface |
+| **Styling** | CSS | Custom User Friendly interface |
 | **HTTP Client** | Fetch API | Communicate with FastAPI backend |
 
 ---
