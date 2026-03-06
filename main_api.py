@@ -239,6 +239,8 @@ async def chat_stream(request: ChatRequest):
     
     async def generate():
         try:
+            import json as json_module
+            
             # Search for relevant documents
             results = vectorstore.query(request.query, top_k=request.top_k)
             
@@ -246,12 +248,28 @@ async def chat_stream(request: ChatRequest):
                 yield "data: No relevant documents found.\n\n"
                 return
             
-            # Extract text content
-            texts = [r.get("metadata", {}).get("text", "").strip() for r in results if r.get("metadata", {}).get("text")]
+            # Extract text content and build sources metadata
+            texts = []
+            sources = []
+            for r in results:
+                text = r.get("metadata", {}).get("text", "").strip()
+                if text:
+                    texts.append(text)
+                    source_name = r.get("metadata", {}).get("source", "")
+                    if source_name:
+                        source_name = os.path.basename(source_name)
+                    sources.append({
+                        "source": source_name or f"Document {len(texts)}",
+                        "preview": text[:150] + "..." if len(text) > 150 else text,
+                        "score": r.get("score", 0)
+                    })
             
             if not texts:
                 yield "data: No relevant content found.\n\n"
                 return
+            
+            # Emit sources metadata before streaming LLM tokens
+            yield f"data: [SOURCES]{json_module.dumps(sources)}\n\n"
             
             context = "\n\n".join(f"[Document {i+1}]\n{text}" for i, text in enumerate(texts))
             
@@ -267,18 +285,26 @@ async def chat_stream(request: ChatRequest):
                 streaming=True
             )
             
-            prompt = f"""You are a helpful AI assistant. Based on the following documents, answer the user's question concisely and accurately.
+            prompt = f"""You are an intelligent, professional AI assistant helping a user extract information from their documents.
 
-Documents:
+CRITICAL INSTRUCTIONS:
+1. You MUST structure your answer clearly using Markdown formatting.
+2. Use **bold text** for important keywords, names, or concepts.
+3. Use bulleted lists (`- `) or numbered lists (`1. `) whenever explaining multiple points, steps, or features. 
+4. ALWAYS put a DOUBLE BLANK LINE (`\n\n`) between each bullet point to ensure proper readable spacing. Do not bunch them together.
+5. If the answer is long, break it into readable paragraphs and use `###` headings if appropriate.
+6. Base your entire answer ONLY on the provided documents. If the documents don't contain the answer, say so clearly.
+
+Documents provided for context:
 {context}
 
-Question: {request.query}
+User's Question: {request.query}
 
-Answer:"""
+Structured Markdown Answer:"""
             
             for chunk in llm.stream(prompt):
                 if chunk.content:
-                    yield f"data: {chunk.content}\n\n"
+                    yield f"data: {json_module.dumps({'text': chunk.content})}\n\n"
             
             yield "data: [DONE]\n\n"
             

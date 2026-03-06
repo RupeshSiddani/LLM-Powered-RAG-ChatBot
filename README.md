@@ -22,13 +22,16 @@ A modern document-based question-answering chatbot powered by **Retrieval-Augmen
 
 ## Features
 
-- **Multi-Format Document Support** - Upload PDF, TXT, DOCX, CSV, XLSX, and JSON files
+- **Multi-Format Document Support** - Upload PDF, TXT, DOCX, CSV, XLSX, and JSON files via drag-and-drop
 - **Intelligent Semantic Search** - ChromaDB vector database for accurate document retrieval
-- **Real-time Streaming Responses** - Simple UI streaming for better user experience
-- **Modern Chat Interface** - React-based UI with Vite for fast development
+- **Markdown-Rendered Responses** - Rich formatting with syntax-highlighted code blocks, bold text, and lists
+- **Modern Chat Interface** - React-based UI with dark/light mode toggle
+- **Drag-and-Drop File Upload** - Visual drop zone with file type icons and upload progress animation
 - **REST API** - FastAPI backend with comprehensive endpoints
-- **Context-Aware Answers** - AI responds based on your uploaded documents
-- **Persistent Storage** - ChromaDB maintains your document embeddings across sessions
+- **Context-Aware Answers** - AI responds based only on your uploaded documents
+- **Chat Persistence** - Messages saved to localStorage and restored on page reload
+- **Lazy-Loaded Embeddings** - Server starts instantly; embedding model loads on first use
+- **Session Management** - "New Chat" button clears both frontend history and backend vector store
 
 ---
 
@@ -140,9 +143,11 @@ graph TB
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| **UI Framework** | React | Component-based user interface |
+| **UI Framework** | React 19 | Component-based user interface |
 | **Build Tool** | Vite | Fast development and optimized builds |
-| **Styling** | CSS | Custom User Friendly interface |
+| **Markdown Rendering** | react-markdown + remark-gfm | Rich text formatting for AI responses |
+| **Code Highlighting** | react-syntax-highlighter | Syntax-highlighted code blocks (Prism oneDark) |
+| **Styling** | CSS Variables | Dark/light theme system with smooth transitions |
 | **HTTP Client** | Fetch API | Communicate with FastAPI backend |
 
 ---
@@ -185,7 +190,7 @@ graph TB
 
 **Step 1: User Question**
 - Question typed in React chat interface
-- Sent to `/api/chat/stream` for streaming response
+- Sent to `/api/chat` endpoint
 
 **Step 2: Embed Query**
 - Same embedding model converts query to vector
@@ -193,23 +198,23 @@ graph TB
 
 **Step 3: Similarity Search**
 - ChromaDB compares query vector with stored vectors
-- Uses cosine similarity (range: -1 to 1)
-- Returns top-k most similar chunks (default k=4)
+- Uses L2 distance for similarity matching
+- Returns top-k most similar chunks (default k=3)
 
 **Step 4: Build Context**
 - Retrieved chunks concatenated with separators
-- Format: `Context: [Chunk 1] --- [Chunk 2] --- [Chunk 3]`
+- Format: `[Document 1]\n<text> [Document 2]\n<text> ...`
 
 **Step 5: LLM Generation**
 - System prompt instructs LLM to use only provided context
 - Groq's Llama 3.3 70B generates answer
-- Temperature: 0.7 (balanced creativity/accuracy)
-- Response streamed token-by-token via Server-Sent Events
+- Temperature: 0.1 (high accuracy, low hallucination)
+- Full response returned as JSON
 
 **Step 6: Display Response**
-- React component receives streaming chunks
-- UI updates in real-time (typing effect)
-- User sees answer appearing progressively
+- React component renders the complete response
+- Markdown formatting preserved (bullet points, bold, headings)
+- `react-markdown` renders rich text with syntax-highlighted code blocks
 
 ---
 
@@ -309,7 +314,7 @@ UI available at `http://localhost:5173`
 ```http
 GET /api/health
 ```
-Response: `{"status": "healthy"}`
+Response: `{"status": "healthy", "initialized": true, "document_count": 26}`
 
 ### Upload Documents
 ```http
@@ -317,26 +322,29 @@ POST /api/upload
 Content-Type: multipart/form-data
 
 Request: files: [File, File, ...]
-Response: {"message": "Documents uploaded successfully", "files_processed": 3}
+Response: {"status": "success", "files_processed": ["doc.pdf"], "chunks_created": 26}
 ```
 
-### Chat (Non-Streaming)
+### Chat
 ```http
 POST /api/chat
 Content-Type: application/json
 
-Request: {"message": "What is the main topic?"}
-Response: {"response": "Based on the documents..."}
+Request: {"query": "What is the main topic?", "top_k": 3}
+Response: {"response": "Based on the documents...", "sources": [...]}
 ```
 
-### Chat (Streaming)
+### Get Sources
 ```http
-POST /api/chat/stream
-Content-Type: application/json
-
-Request: {"message": "Summarize the document"}
-Response: Server-Sent Events stream
+GET /api/sources
 ```
+Response: `{"sources": ["document1.pdf", "notes.txt"]}`
+
+### Clear Documents
+```http
+POST /api/clear
+```
+Response: `{"status": "cleared", "document_count": 0}`
 
 ---
 
@@ -385,30 +393,37 @@ CHUNK_OVERLAP=100
 ```
 LLM-Powered-RAG-ChatBot/
 │
-├── main_api.py                 # FastAPI application
+├── main_api.py                 # FastAPI application (CORS, chat, upload, clear endpoints)
 ├── requirements.txt            # Python dependencies
-├── .env                        # Environment variables
+├── .env                        # Environment variables (GROQ_API_KEY)
 ├── .gitignore                  # Git ignore rules
 ├── README.md                   # Documentation
+├── INTERVIEW_GUIDE.md          # Interview preparation guide
 │
 ├── src/
 │   ├── __init__.py
-│   ├── vectorstore.py          # ChromaDB operations
+│   ├── vectorstore.py          # ChromaDB operations (build, query, clear)
 │   ├── search.py               # RAG search logic
-│   ├── embedding.py            # Embedding pipeline
-│   └── data_loader.py          # Document parsing
+│   ├── embedding.py            # Embedding pipeline (lazy-loaded SentenceTransformer)
+│   └── data_loader.py          # Document parsing (PDF, DOCX, TXT, CSV, XLSX, JSON)
 │
 ├── frontend/
-│   ├── package.json            # Node dependencies
+│   ├── package.json            # Node dependencies (react-markdown, remark-gfm, etc.)
 │   ├── vite.config.js          # Vite config
-│   ├── index.html              # HTML entry
+│   ├── index.html              # HTML entry (SEO meta tags)
 │   │
 │   └── src/
-│       ├── App.jsx             # Main React component
-│       ├── App.css             # Styling
-│       └── main.jsx            # React entry
+│       ├── App.jsx             # Main React component (chat, upload, session management)
+│       ├── App.css             # Dark/light theme system with CSS variables
+│       ├── index.css           # Base styles
+│       ├── main.jsx            # React entry
+│       │
+│       └── components/
+│           ├── ChatMessage.jsx # Markdown-rendered chat bubbles with code highlighting
+│           ├── FileUpload.jsx  # Drag-and-drop upload zone with file type icons
+│           └── ThemeToggle.jsx # Dark/light mode toggle with localStorage persistence
 │
-└── chroma_store/               # Vector database (auto-created)
+└── chroma_store/               # Vector database (auto-created, gitignored)
 ```
 
 ---

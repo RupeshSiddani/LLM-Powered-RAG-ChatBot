@@ -21,8 +21,18 @@ class EmbeddingPipeline:
             separators=["\n\n", "\n", " ", ""]
         )
 
-        self.model = SentenceTransformer(model_name)
-        print(f"[INFO] Loaded embedding model: {model_name}")
+        self.model_name = model_name
+        self._model = None
+        # Model will be lazy-loaded on first use
+
+    @property
+    def model(self):
+        """Lazy-load the SentenceTransformer model to speed up server boot times."""
+        if self._model is None:
+            print(f"[INFO] Lazy-loading embedding model: {self.model_name}...")
+            self._model = SentenceTransformer(self.model_name)
+            print(f"[INFO] Successfully loaded embedding model: {self.model_name}")
+        return self._model
 
     # --------------------------------------------------
     # EXISTING METHODS (kept)
